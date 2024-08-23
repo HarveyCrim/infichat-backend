@@ -1,7 +1,6 @@
 import { Request, Response } from "express"
 import { userModel } from "../models/User"
 import jwt from "jsonwebtoken"
-import mongoose from "mongoose"
 const createUser = async (req: Request, res: Response) => {
     let currUser = await userModel.findOne({email: req.body.email})
     if(!currUser){
@@ -27,9 +26,7 @@ const getSpecificUser = async (req: Request, res: Response) => {
     if(currUser?.email === req.params.email){
         return res.json(null)
     }
-    console.log(currUser?.friends, user?._id)
     const friend = currUser?.friends.find((item) => item.toString() == user?._id.toString())
-    console.log(friend)
     if(friend){
         return res.json(null)
     }
@@ -55,7 +52,7 @@ const sendFriendRequest = async (req: Request, res: Response) => {
             await userModel.findByIdAndUpdate(req.params._id, {
                 $pull : {notifications: {kind: "request", from: currUser._id}}
             })
-            return res.json({message:"updated"})
+            return res.json({message:"removed", to: req.params._id})
         }
     }
     await userModel.updateOne({email: res.locals.verified.email}, {
@@ -64,7 +61,7 @@ const sendFriendRequest = async (req: Request, res: Response) => {
     await userModel.findByIdAndUpdate(req.params._id, {
         $push : {notifications : {kind: "request", from : currUser?._id}}
     })
-    return res.json({message: "updated"})
+    return res.json({message: "added", to: req.params._id})
 }
 
 const acceptFriendRequest = async (req: Request, res: Response) => {
@@ -74,7 +71,7 @@ const acceptFriendRequest = async (req: Request, res: Response) => {
         await userModel.findByIdAndUpdate(currUser?._id, {
             $pull : {notifications : {kind: "request", from: sender}}
         })
-        return res.json({message : "updated"})
+        return res.json({message : "rejected"})
     }
     await userModel.findByIdAndUpdate(sender, {
         $push : {friends : currUser?._id},
@@ -84,11 +81,11 @@ const acceptFriendRequest = async (req: Request, res: Response) => {
         $push : {friends: sender},
         $pull : {notifications : {kind: "request", from: sender}}
     })
-    return res.json({message: "updated"})
+    return res.json({message: "accepted", from: sender})
 }
 
 const getUser = async(req: Request, res: Response) => {
-    const currUser = await userModel.findOne({email: res.locals.verified.email}).populate("notifications.from")
+    const currUser = await userModel.findOne({email: res.locals.verified.email}).populate("notifications.from").populate("friends")
     res.json(currUser)
 }
 export default {createUser, getUser, updateUser, getSpecificUser, sendFriendRequest, friendOrNot, acceptFriendRequest}

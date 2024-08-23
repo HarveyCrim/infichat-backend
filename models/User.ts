@@ -28,7 +28,11 @@ const userSchema = new mongoose.Schema({
             type: mongoose.Schema.Types.ObjectId,
             ref: "CUser"
         }
-    }]
+    }],
+    isOnline: {
+        type: Boolean,
+        default: false
+    }
 }, {
     timestamps: true
 })

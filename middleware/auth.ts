@@ -3,6 +3,9 @@ import jwt, { JwtPayload } from "jsonwebtoken"
 import { userModel } from "../models/User"
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
     const token = req.headers.authorization
+    if(!token){
+        return res.status(500).json({message: "invalid request"})
+    }
     const tokenSig = token!.split(" ")[1]
     const verified = jwt.verify(tokenSig, process.env.JWT_SECRET as string)
     res.locals.verified = verified

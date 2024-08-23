@@ -14,13 +14,51 @@ const io = new Server(server, {
         credentials: true
     }
 })
-let set = new Set()
+type onlineUser = {
+    id: string,
+    socketId: string
+}
+let set:onlineUser[] = []
+
 io.on("connection", async (socket) => {
-    set.add(socket.id)
      const token = socket.handshake.auth.token
-     const currUser = await getUserFromToken(token)
-     const id = currUser?._id.toString()
-     socket.join(id!)
+     const userFromToken = await getUserFromToken(token)
+     for(let i = 0; i < set.length; i++){
+        if(set[i].id == userFromToken?._id.toString()){
+            set.splice(i, 1)
+        }
+     }
+     set.push({id: userFromToken?._id.toString()!, socketId: socket.id})
+     console.log(set)
+     socket.on("notificationSent", (data) => {
+        const identity = set.find(item => item.id.toString() == data.to.toString())
+        if(!identity){
+            return
+        }
+        if(data.type == "request"){
+            console.log("sent")
+            socket.to(identity.socketId).emit("notificationReceived", 
+                {
+                    from : userFromToken?.id,
+                    type: "request",
+                    action: data.action
+                }
+            )
+        }
+     })
+     socket.on("friendRequestAccepted", (data) => {
+        console.log("data", data)
+        const identity = set.find(item => item.id.toString() == data.from.toString())
+        if(!identity){
+            return
+        }
+        socket.to(identity.socketId).emit("acceptHandler")
+     })
+     io.on("disconnect", () => {
+        set = set.filter((item) => {
+            return item.id !== socket.id
+        })
+     })
 })
 
 try{
