@@ -6,6 +6,7 @@ import { Server } from "socket.io"
 import http from "http"
 import userRouter from "../routers/UserRouter"
 import { getUserFromToken } from "../middleware/auth"
+import convoRouter from "../routers/ConvoRouter"
 const app = express()
 const server = http.createServer(app)
 const io = new Server(server, {
@@ -46,8 +47,16 @@ io.on("connection", async (socket) => {
             )
         }
      })
+     socket.on("messageSent", (data) => {
+        const identity = set.find(item => item.id.toString() == data.receiver.toString())
+        if(!identity){
+            return
+        }
+        console.log("yup")
+        socket.to(identity.socketId).emit("messageReceived", data)
+     })
      socket.on("friendRequestAccepted", (data) => {
-        console.log("data", data)
+        // console.log("data", data)
         const identity = set.find(item => item.id.toString() == data.from.toString())
         if(!identity){
             return
@@ -70,6 +79,7 @@ catch(err){
 app.use(express.json())
 app.use(cors())
 app.use("/api/user", userRouter)
+app.use("/api/convo", convoRouter)
 server.listen(process.env.PORT,() => {
     console.log("listening")
 })
