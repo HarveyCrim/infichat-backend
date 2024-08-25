@@ -19,28 +19,23 @@ type onlineUser = {
     id: string,
     socketId: string
 }
-let set:onlineUser[] = []
-
+let set = new Set()
 io.on("connection", async (socket) => {
-     const token = socket.handshake.auth.token
-     const userFromToken = await getUserFromToken(token)
-     for(let i = 0; i < set.length; i++){
-        if(set[i].id == userFromToken?._id.toString()){
-            set.splice(i, 1)
-        }
-     }
-     set.push({id: userFromToken?._id.toString()!, socketId: socket.id})
-     console.log(set)
+     socket.on("connectionMade", async (data) =>{
+        socket.join(data)
+        set.add(data)
+        console.log(set)
+     })
+    
      socket.on("notificationSent", (data) => {
-        const identity = set.find(item => item.id.toString() == data.to.toString())
+        const identity = set.has(data.to)
         if(!identity){
             return
         }
         if(data.type == "request"){
             console.log("sent")
-            socket.to(identity.socketId).emit("notificationReceived", 
+            socket.to(data.to).emit("notificationReceived", 
                 {
-                    from : userFromToken?.id,
                     type: "request",
                     action: data.action
                 }
@@ -48,25 +43,22 @@ io.on("connection", async (socket) => {
         }
      })
      socket.on("messageSent", (data) => {
-        const identity = set.find(item => item.id.toString() == data.receiver.toString())
+        const identity = set.has(data.receiver.toString())
         if(!identity){
             return
         }
         console.log("yup")
-        socket.to(identity.socketId).emit("messageReceived", data)
+        socket.to(data.receiver.toString()).emit("messageReceived", data)
      })
+
      socket.on("friendRequestAccepted", (data) => {
         // console.log("data", data)
-        const identity = set.find(item => item.id.toString() == data.from.toString())
+        const identity = set.has(data.from.toString())
         if(!identity){
             return
         }
-        socket.to(identity.socketId).emit("acceptHandler")
-     })
-     io.on("disconnect", () => {
-        set = set.filter((item) => {
-            return item.id !== socket.id
-        })
+        console.log("emitted")
+        socket.to(data.from.toString()).emit("accept_Effect", data)
      })
 })
 

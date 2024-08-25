@@ -11,7 +11,7 @@ const createUser = async (req: Request, res: Response) => {
         })
     }
     const token = "Bearer "+jwt.sign({email: currUser.email}, process.env.JWT_SECRET as string)
-    res.json({token})
+    res.json({token, _id: currUser._id.toString()})
 }
 
 const updateUser = async(req: Request, res: Response) => {
@@ -43,6 +43,7 @@ const friendOrNot = async (req: Request, res: Response) => {
     }
     return res.json({message: false})
 }
+
 const sendFriendRequest = async (req: Request, res: Response) => {
     const currUser = await userModel.findOne({email: res.locals.verified.email})
     for(let i = 0; i < currUser?.friendRequests?.length!; i++){
@@ -53,7 +54,7 @@ const sendFriendRequest = async (req: Request, res: Response) => {
             await userModel.findByIdAndUpdate(req.params._id, {
                 $pull : {notifications: {kind: "request", from: currUser._id}}
             })
-            return res.json({message:"removed", to: req.params._id})
+            return res.json({message:"removed", to: req.params._id, from: req.params.sender})
         }
     }
     await userModel.updateOne({email: res.locals.verified.email}, {
