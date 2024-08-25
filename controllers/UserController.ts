@@ -2,7 +2,6 @@ import { Request, Response } from "express"
 import { userModel } from "../models/User"
 import jwt from "jsonwebtoken"
 const createUser = async (req: Request, res: Response) => {
-    console.log(req.body)
     let currUser = await userModel.findOne({email: req.body.email})
     if(!currUser){
         currUser = await userModel.create({
@@ -11,6 +10,7 @@ const createUser = async (req: Request, res: Response) => {
         })
     }
     const token = "Bearer "+jwt.sign({email: currUser.email}, process.env.JWT_SECRET as string)
+    res.cookie("token", token)
     res.json({token, _id: currUser._id.toString()})
 }
 

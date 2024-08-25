@@ -1,12 +1,16 @@
 import express from "express"
+import {Request, Response} from "express"
 import cors from "cors"
 import mongoose from "mongoose"
 import "dotenv/config"
 import { Server } from "socket.io"
 import http from "http"
 import userRouter from "../routers/UserRouter"
-import { getUserFromToken } from "../middleware/auth"
+import cookieParser from "cookie-parser"
+import session from "express-session"
+import { authMiddleware, getUserFromToken } from "../middleware/auth"
 import convoRouter from "../routers/ConvoRouter"
+import { userModel } from "../models/User"
 const app = express()
 const server = http.createServer(app)
 const io = new Server(server, {
@@ -15,15 +19,25 @@ const io = new Server(server, {
         credentials: true
     }
 })
-type onlineUser = {
-    id: string,
-    socketId: string
-}
-let set = new Set()
+app.use(cookieParser());
+
+app.use(session({
+    secret: process.env.SESSION_SECRET!,
+    saveUninitialized: true,
+    resave: true
+}));
+let set = new Set<string>()
+let map = new Map()
 io.on("connection", async (socket) => {
      socket.on("connectionMade", async (data) =>{
+        map.set(socket.id, data)
         socket.join(data)
-        set.add(data)
+        set.add(String(data))
+        const currUser = await userModel.findById(data)
+        await userModel.findByIdAndUpdate(data, {isOnline: true})
+        currUser?.friends.forEach((friend) => {
+            io.to(String(friend)).emit("onlineStatus", data)
+        })
         console.log(set)
      })
     
@@ -33,7 +47,6 @@ io.on("connection", async (socket) => {
             return
         }
         if(data.type == "request"){
-            console.log("sent")
             socket.to(data.to).emit("notificationReceived", 
                 {
                     type: "request",
@@ -47,19 +60,29 @@ io.on("connection", async (socket) => {
         if(!identity){
             return
         }
-        console.log("yup")
         socket.to(data.receiver.toString()).emit("messageReceived", data)
      })
 
      socket.on("friendRequestAccepted", (data) => {
-        // console.log("data", data)
         const identity = set.has(data.from.toString())
         if(!identity){
             return
         }
-        console.log("emitted")
         socket.to(data.from.toString()).emit("accept_Effect", data)
      })
+
+     socket.on("disconnect", async () => {
+        const id = map.get(socket.id)
+        map.delete(socket.id)
+        set.delete(String(id))
+        await userModel.findByIdAndUpdate(id, {isOnline: false})
+        const currUser = await userModel.findById(id)
+        currUser?.friends.forEach((friend) => {
+            io.to(String(friend)).emit("offlineStatus", id)
+        })
+        
+     })
+
 })
 
 try{
@@ -68,8 +91,11 @@ try{
 catch(err){
     console.log(err)
 }
+
+
 app.use(express.json())
 app.use(cors())
+
 app.use("/api/user", userRouter)
 app.use("/api/convo", convoRouter)
 server.listen(process.env.PORT,() => {
