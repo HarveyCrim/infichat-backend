@@ -16,8 +16,28 @@ const userSchema = new mongoose.Schema({
         ref: "CUser"
     }],
     friends: [{
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "CUser"
+        friendId : {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "CUser"
+        },
+        lastMessage: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref:"Message"
+        },
+        unread:[
+            {
+                friend: {
+                    type: mongoose.Schema.Types.ObjectId,
+                    ref: "CUser"
+                },
+                messages: [{
+                        type: mongoose.Schema.Types.ObjectId,
+                        ref:"Message"
+                    }
+                ]
+            }
+        ]
+        
     }],
     notifications:[{
         kind: {

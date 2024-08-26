@@ -1,6 +1,7 @@
 import {Request, Response} from "express"
 import { convoModel } from "../models/Conversation"
 import { messageModel } from "../models/Message"
+import { userModel } from "../models/User"
 
 const addToConvo = async (req: Request, res: Response) => {
     let convo = await convoModel.findOne({$or: [{$and: [{sender: req.body.sender}, {receiver: req.body.receiver}]},
@@ -21,6 +22,22 @@ const addToConvo = async (req: Request, res: Response) => {
     }, {
         $push : {messages : message._id}
     })                          
+    await userModel.updateOne(
+        { _id: req.body.sender, "friends.friendId": req.body.receiver },
+        {
+            $set: {
+                "friends.$.lastMessage": message
+             }
+        }
+    )
+    await userModel.updateOne(
+        { _id: req.body.receiver, "friends.friendId": req.body.sender },
+        {
+            $set: {
+                "friends.$.lastMessage": message
+             }
+        }
+    )
     return res.json({sender: req.body.sender, receiver: req.body.receiver, message})
 }
 

@@ -36,7 +36,7 @@ io.on("connection", async (socket) => {
         const currUser = await userModel.findById(data)
         await userModel.findByIdAndUpdate(data, {isOnline: true})
         currUser?.friends.forEach((friend) => {
-            io.to(String(friend)).emit("onlineStatus", data)
+            io.to(String(friend?.friendId?.toString())).emit("onlineStatus", data)
         })
         console.log(set)
      })
@@ -47,7 +47,7 @@ io.on("connection", async (socket) => {
             return
         }
         if(data.type == "request"){
-            socket.to(data.to).emit("notificationReceived", 
+            io.to(data.to).emit("notificationReceived", 
                 {
                     type: "request",
                     action: data.action
@@ -56,11 +56,14 @@ io.on("connection", async (socket) => {
         }
      })
      socket.on("messageSent", (data) => {
+        console.log(data)
         const identity = set.has(data.receiver.toString())
         if(!identity){
             return
         }
-        socket.to(data.receiver.toString()).emit("messageReceived", data)
+        io.to(data.receiver.toString()).emit("messageReceived", data)
+        io.to(data.receiver.toString()).emit("messageReceivedC", data)
+        io.to(data.sender.toString()).emit("messageUpdate", data)
      })
 
      socket.on("friendRequestAccepted", (data) => {
@@ -68,7 +71,7 @@ io.on("connection", async (socket) => {
         if(!identity){
             return
         }
-        socket.to(data.from.toString()).emit("accept_Effect", data)
+        io.to(data.from.toString()).emit("accept_Effect", data)
      })
 
      socket.on("disconnect", async () => {
@@ -78,7 +81,7 @@ io.on("connection", async (socket) => {
         await userModel.findByIdAndUpdate(id, {isOnline: false})
         const currUser = await userModel.findById(id)
         currUser?.friends.forEach((friend) => {
-            io.to(String(friend)).emit("offlineStatus", id)
+            io.to(String(friend?.friendId)).emit("offlineStatus", id)
         })
         
      })

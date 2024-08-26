@@ -27,7 +27,7 @@ const getSpecificUser = async (req: Request, res: Response) => {
     if(currUser?.email === req.params.email){
         return res.json(null)
     }
-    const friend = currUser?.friends.find((item) => item.toString() == user?._id.toString())
+    const friend = currUser?.friends.find((item) => item?.friendId?.toString() == user?._id.toString())
     if(friend){
         return res.json(null)
     }
@@ -76,18 +76,18 @@ const acceptFriendRequest = async (req: Request, res: Response) => {
         return res.json({message : "rejected"})
     }
     await userModel.findByIdAndUpdate(sender, {
-        $push : {friends : currUser?._id},
+        $push : {friends : {friendId : currUser?._id, lastMessage: null, unread:[]}},
         $pull : {friendRequests : currUser?._id}
     })
     await userModel.findByIdAndUpdate(currUser?._id, {
-        $push : {friends: sender},
+        $push : {friends: {friendId: sender, lastMessage: null, unread: []}},
         $pull : {notifications : {kind: "request", from: sender}}
     })
     return res.json({message: "accepted", from: sender})
 }
 
 const getUser = async(req: Request, res: Response) => {
-    const currUser = await userModel.findOne({email: res.locals.verified.email}).populate("notifications.from").populate("friends")
+    const currUser = await userModel.findOne({email: res.locals.verified.email}).populate("notifications.from").populate("friends.friendId").populate("friends.lastMessage")
     res.json(currUser)
 }
 export default {createUser, getUser, updateUser, getSpecificUser, sendFriendRequest, friendOrNot, acceptFriendRequest}
