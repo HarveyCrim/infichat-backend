@@ -41,6 +41,25 @@ const addToConvo = async (req: Request, res: Response) => {
     return res.json({sender: req.body.sender, receiver: req.body.receiver, message})
 }
 
+const addToUnread = async (req: Request, res: Response) => {
+    await userModel.updateOne({_id: req.body.receiver, "friends.friendId": req.body.sender},
+        {
+            $push : {"friends.$.unread" : req.body.message}
+        }
+    )
+    return res.json({message: "updated"})
+}
+
+const removeUnread = async (req: Request, res: Response) => {
+    console.log(req.params)
+    await userModel.updateOne({_id: req.body.sender, "friends.friendId": req.body.receiver},
+        {
+            $set : {"friends.$.unread" : []}
+        }
+    )
+    return res.json({message: "updated"})
+}
+
 const getConvo = async (req: Request, res: Response) => {
     const convo = await convoModel.findOne(
         {
@@ -52,4 +71,4 @@ const getConvo = async (req: Request, res: Response) => {
     ).populate("messages")
     return res.json(convo)
 }
-export default {addToConvo, getConvo}
+export default {addToConvo, getConvo, addToUnread, removeUnread}

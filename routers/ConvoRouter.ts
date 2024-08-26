@@ -5,4 +5,6 @@ const convoRouter = express.Router()
 
 convoRouter.post("/create", authMiddleware, convoController.addToConvo)
 convoRouter.post("/convo", authMiddleware, convoController.getConvo)
+convoRouter.post("/unread", authMiddleware, convoController.addToUnread)
+convoRouter.put("/remove-unread", authMiddleware, convoController.removeUnread)
 export default convoRouter

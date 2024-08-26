@@ -26,15 +26,8 @@ const userSchema = new mongoose.Schema({
         },
         unread:[
             {
-                friend: {
-                    type: mongoose.Schema.Types.ObjectId,
-                    ref: "CUser"
-                },
-                messages: [{
-                        type: mongoose.Schema.Types.ObjectId,
-                        ref:"Message"
-                    }
-                ]
+                type: mongoose.Schema.Types.ObjectId,
+                ref:"Message"
             }
         ]
         
