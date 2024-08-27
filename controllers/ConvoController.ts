@@ -51,7 +51,6 @@ const addToUnread = async (req: Request, res: Response) => {
 }
 
 const removeUnread = async (req: Request, res: Response) => {
-    console.log(req.params)
     await userModel.updateOne({_id: req.body.sender, "friends.friendId": req.body.receiver},
         {
             $set : {"friends.$.unread" : []}

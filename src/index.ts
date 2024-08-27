@@ -31,6 +31,7 @@ let map = new Map()
 io.on("connection", async (socket) => {
      socket.on("connectionMade", async (data) =>{
         map.set(socket.id, data)
+        console.log(map)
         socket.join(data)
         set.add(String(data))
         const currUser = await userModel.findById(data)

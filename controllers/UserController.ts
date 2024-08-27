@@ -2,7 +2,7 @@ import { Request, Response } from "express"
 import { userModel } from "../models/User"
 import jwt from "jsonwebtoken"
 const createUser = async (req: Request, res: Response) => {
-    let currUser = await userModel.findOne({email: req.body.email})
+    let currUser = await userModel.findOne({email: req.body.email, name: req.body.name})
     if(!currUser){
         currUser = await userModel.create({
             name: req.body.name,
